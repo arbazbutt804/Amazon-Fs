@@ -412,9 +412,10 @@ def get_access_token():
             token_data = response.json()
             #print(f"response {token_data}.")
             access_token = token_data['access_token']
+            st.info(f"fetching access token: {response.status_code}")
             return access_token
         else:
-            message = f"Error fetching access token: {response.status_code} - {response.text}"
+            st.info(f"Error fetching access token: {response.status_code}")
             return None
     except Exception as e:
         message = f"Exception occurred while fetching access token: {str(e)}"
