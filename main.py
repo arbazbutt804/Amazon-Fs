@@ -37,14 +37,18 @@ def analyze_idq(uploaded_file):
         # Filter for products with review scores above 0.1 but below 3.5
         filtered_df = df[(df['Review Avg Rating'] > 0.1) & (df['Review Avg Rating'] < 3.5)]
         grouped = filtered_df.groupby('Marketplace')
+        st.info("Found sheet names1")
         F1_output = BytesIO()
+        st.info("Found sheet names2")
         #output_file = 'F1s.xlsx'
         with pd.ExcelWriter(F1_output, engine='xlsxwriter') as writer:
             for name, group in grouped:
                 group[['ASIN']].to_excel(writer, sheet_name=name, index=False)
         F1_output.seek(0)
+        st.info("Found sheet names3")
         # Save the file in Streamlit session state so it can be used later
         st.session_state.output_file = F1_output
+        st.info("Found sheet names4")
         return True
     except Exception as e:
         #logging.error(f"An unexpected error occurred during the initial IDQ analysis: {e}")
