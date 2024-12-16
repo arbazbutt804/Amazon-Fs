@@ -37,11 +37,11 @@ def analyze_idq(uploaded_file):
         # Filter for products with review scores above 0.1 but below 3.5
         filtered_df = df[(df['Review Avg Rating'] > 0.1) & (df['Review Avg Rating'] < 3.5)]
         grouped = filtered_df.groupby('Marketplace')
-        output_file = 'F1s.xlsx'
-        with pd.ExcelWriter(output_file) as writer:
-            for name, group in grouped:
-                group[['ASIN']].to_excel(writer, sheet_name=name, index=False)
-        print(f"Analysis complete. The output has been saved as {output_file}.")
+        # output_file = 'F1s.xlsx'
+        # with pd.ExcelWriter(output_file) as writer:
+        #     for name, group in grouped:
+        #         group[['ASIN']].to_excel(writer, sheet_name=name, index=False)
+        #print(f"Analysis complete. The output has been saved as {output_file}.")
         return True
     except Exception as e:
         logging.error(f"An unexpected error occurred during the initial IDQ analysis: {e}")
