@@ -47,8 +47,8 @@ def analyze_idq(uploaded_file):
         st.session_state.output_file = output
         return True
     except Exception as e:
-        logging.error(f"An unexpected error occurred during the initial IDQ analysis: {e}")
-        st.error("An unexpected error occurred during the initial IDQ analysis")
+        #logging.error(f"An unexpected error occurred during the initial IDQ analysis: {e}")
+        st.error(f"An unexpected error occurred during the initial IDQ analysis: {e}")
 
 def update_excel_with_seller_sku(access_token):
     marketplace_id_mapping = {
