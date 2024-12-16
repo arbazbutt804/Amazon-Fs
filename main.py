@@ -10,12 +10,14 @@ import streamlit as st
 
 from io import StringIO, BytesIO
 
-# Set up logging with time and date
+# Set up basic logging configuration
 logging.basicConfig(
-    filename='analyze_idq_log.txt',
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
+    level=logging.DEBUG,  # Set logging level to DEBUG, INFO, WARNING, ERROR
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    handlers=[
+        logging.StreamHandler(),  # Logs to the terminal (good for Streamlit Cloud)
+        logging.FileHandler("app.log")  # Logs to a file (optional)
+    ]
 )
 
 # Marketplace API setup
