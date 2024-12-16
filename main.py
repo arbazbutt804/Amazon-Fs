@@ -1,7 +1,7 @@
 import gzip
 import logging
 from datetime import time
-import jsonthe
+import json
 
 import pandas as pd
 import requests
