@@ -37,14 +37,14 @@ def analyze_idq(uploaded_file):
         # Filter for products with review scores above 0.1 but below 3.5
         filtered_df = df[(df['Review Avg Rating'] > 0.1) & (df['Review Avg Rating'] < 3.5)]
         grouped = filtered_df.groupby('Marketplace')
-        output = BytesIO()
+        F1_output = BytesIO()
         #output_file = 'F1s.xlsx'
-        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        with pd.ExcelWriter(F1_output, engine='xlsxwriter') as writer:
             for name, group in grouped:
                 group[['ASIN']].to_excel(writer, sheet_name=name, index=False)
-        output.seek(0)
+        F1_output.seek(0)
         # Save the file in Streamlit session state so it can be used later
-        st.session_state.output_file = output
+        st.session_state.output_file = F1_output
         return True
     except Exception as e:
         #logging.error(f"An unexpected error occurred during the initial IDQ analysis: {e}")
@@ -65,19 +65,13 @@ def update_excel_with_seller_sku(access_token):
     try:
         logging.info("Starting to update F1s.xlsx with Seller SKU.")
 
-        # Path to the already generated F1s.xlsx
-        input_file = 'F1s.xlsx'
+        # Load the Excel file from session state
+        input_file = st.session_state.output_file
 
-        # Check if the file exists
-        try:
-            xls = pd.ExcelFile(input_file)
-        except FileNotFoundError:
-            logging.error(f"The file {input_file} does not exist.")
-            st.error(f"The file {input_file} does not exist. Please check the file generation process.")
-            return
-
+        # Read the Excel file into a DataFrame
+        xls = pd.ExcelFile(input_file)
         sheet_names = xls.sheet_names
-        logging.info(f"Found sheet names: {sheet_names}")
+        st.info(f"Found sheet names: {sheet_names}")
 
         # Store dataframes temporarily
         df_dict = {}
@@ -130,6 +124,17 @@ def update_excel_with_seller_sku(access_token):
             for sheet, df in df_dict.items():
                 logging.info(f"Writing updated data to sheet {sheet}.")
                 df.to_excel(writer, sheet_name=sheet, index=False)
+
+        output = BytesIO()
+        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+            for sheet, df in df_dict.items():
+                logging.info(f"Writing updated data to sheet {sheet}.")
+                df.to_excel(writer, sheet_name=sheet, index=False)
+
+        output.seek(0)
+
+        # Store the updated file in session state
+        st.session_state.output_file = output
 
         logging.info("Successfully updated F1s.xlsx with Seller SKU information.")
         return True
@@ -503,10 +508,10 @@ def main():
                         update_excel_with_f1_to_use()
                         update_excel_with_barcodes(uploaded_barcodes)
     # Check if the output file exists and show download button
-    # if st.session_state.output_file is not None:
-    #     with open(st.session_state.output_file, "rb") as file:
-    #         st.download_button(label="Save File", data=file, file_name=st.session_state.output_file,
-    #                            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    if st.session_state.output_file is not None:
+        with open(st.session_state.output_file, "rb") as file:
+            st.download_button(label="Save File", data=file, file_name=st.session_state.output_file,
+                               mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
 if __name__ == "__main__":
     main()
