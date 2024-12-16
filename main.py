@@ -38,7 +38,6 @@ def analyze_idq(uploaded_file):
         filtered_df = df[(df['Review Avg Rating'] > 0.1) & (df['Review Avg Rating'] < 3.5)]
         grouped = filtered_df.groupby('Marketplace')
         F1_output = BytesIO()
-        #output_file = 'F1s.xlsx'
         with pd.ExcelWriter(F1_output, engine='xlsxwriter') as writer:
             for name, group in grouped:
                 group[['ASIN']].to_excel(writer, sheet_name=name, index=False)
@@ -47,7 +46,6 @@ def analyze_idq(uploaded_file):
         st.session_state.output_file = F1_output
         return True
     except Exception as e:
-        #logging.error(f"An unexpected error occurred during the initial IDQ analysis: {e}")
         st.error(f"An unexpected error occurred during the initial IDQ analysis: {e}")
 
 def update_excel_with_seller_sku(access_token):
@@ -71,7 +69,6 @@ def update_excel_with_seller_sku(access_token):
         # Read the Excel file into a DataFrame
         xls = pd.ExcelFile(input_file)
         sheet_names = xls.sheet_names
-        #st.info(f"Found sheet names: {sheet_names}")
 
         # Store dataframes temporarily
         df_dict = {}
@@ -86,8 +83,6 @@ def update_excel_with_seller_sku(access_token):
 
             # Read the corresponding .txt file into a DataFrame (assume the file is uploaded as well)
             df_txt = get_product_listing(access_token,marketplace_id)
-            #df_txt = read_txt_file(sheet)
-            #st.write("run successfully")
 
             # Check if df_txt is None and handle the error
             if df_txt is None:
@@ -136,14 +131,13 @@ def update_excel_with_seller_sku(access_token):
         return True
 
     except Exception as e:
-        #logging.error(f"An error occurred while updating the Excel file: {e}")
         st.error(f"An error occurred while updating the Excel file: {e}")
 
 
 def update_excel_with_sku_description():
     try:
         st.info("Starting to update F1s.xlsx with SKU description.")
-        #print("Starting to update F1s.xlsx with SKU description.")
+        logging.info("Starting to update F1s.xlsx with SKU description.")
 
         # Load the Excel file from session state
         input_file = st.session_state.output_file
@@ -206,18 +200,15 @@ def update_excel_with_sku_description():
         st.info("Successfully updated F1s.xlsx with SKU description information.")
 
     except Exception as e:
-        #logging.error(f"An error occurred while updating the Excel file with SKU description: {e}")
         st.error(f"An error occurred while updating the Excel file with SKU description: {e}")
 
 
 def update_excel_with_f1_to_use():
     try:
         st.info("Starting to update F1s with F1 to Use.")
-        #print("Starting to update F1s - Desc Added.xlsx with F1 to Use.")
 
         # Load the existing Excel file from session state
         input_file = st.session_state.output_file
-        #output_file = 'F1s - Desc Added with F1 to Use.xlsx'
 
         # Fetch the CSV file from the URL
         url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRxBqpSTMwezeOji3KXDlrp3855sQHFuYxmKsCIDwILg4iHMEx2BBmp87nwEgI__4g3rM6H65rIp0sF/pub?gid=0&single=true&output=csv"
@@ -283,11 +274,10 @@ def update_excel_with_f1_to_use():
 
 def update_excel_with_barcodes(uploaded_barcodes):
     try:
-        st.info("Starting to update F1s file with Barcodes.")
-        print("Starting to update F1s - Desc Added with F1 to Use.xlsx with Barcodes.")
+        st.info("Starting to update F1s File with Barcodes.")
+        logging.info("Starting to update F1s File with Barcodes.")
 
         input_file = st.session_state.output_file
-        #output_file = 'F1s - Barcode.xlsx'
 
         # Read the uploaded barcodes.csv file into a DataFrame, headers are on the 4th row (index 3)
         df_barcodes = pd.read_csv(uploaded_barcodes, header=3)
@@ -363,7 +353,7 @@ def unzip_gzip_to_csv(gzip_data):
             df = pd.read_csv(f, encoding='windows-1252', delimiter='\t')
             # Parse the DataFrame to keep only the 'seller-sku' and 'asin1' columns
     except (OSError, gzip.BadGzipFile) as e:
-        print("Not a GZIP file. Trying as plain CSV...")
+        logging.info("Not a GZIP file. Trying as plain CSV...")
         # If decompression fails, treat it as a plain CSV file
         df = pd.read_csv(BytesIO(gzip_data), encoding='windows-1252', delimiter='\t')
     if 'seller-sku' in df.columns and 'asin1' in df.columns:
@@ -374,7 +364,7 @@ def unzip_gzip_to_csv(gzip_data):
     else:
         # If columns are not found, raise an error or handle accordingly
         parsed_df = None
-        print("Error: 'seller-sku' and 'asin1' columns not found in the data.")
+        logging.info("Error: 'seller-sku' and 'asin1' columns not found in the data.")
     return parsed_df
 
 def get_access_token():
@@ -394,14 +384,13 @@ def get_access_token():
         # Check if request was successful
         if response.status_code == 200:
             token_data = response.json()
-            #print(f"response {token_data}.")
             access_token = token_data['access_token']
             return access_token
         else:
             st.info(f"Error fetching access token for amazon: {response.status_code}")
             return None
     except Exception as e:
-        message = f"Exception occurred while fetching access token: {str(e)}"
+        st.error(f"Exception occurred while fetching access token: {str(e)}")
         return None
 
 def get_product_listing(access_token, marketplace_id):
@@ -427,7 +416,6 @@ def get_product_listing(access_token, marketplace_id):
         if response.status_code == 202:  # Status 202 indicates the report request was accepted
             report_data = response.json()
             report_id = report_data.get('reportId')
-            #st.write(f"print  {report_id}")
             api_url = f"{MARKETPLACE_BASE_URL}/reports/2021-06-30/reports/{report_id}"
             while retries < max_retries:
                 response_reports = requests.get(api_url, headers=headers)
@@ -438,7 +426,6 @@ def get_product_listing(access_token, marketplace_id):
                         time.sleep(30)
                         retries += 1
                     elif status == "DONE":
-                        #st.write(f" Report Status: {status}")
                         report_document_id = report_status.get('reportDocumentId')
                         api_url = f"{MARKETPLACE_BASE_URL}/reports/2021-06-30/documents/{report_document_id}"
                         response = requests.get(api_url, headers=headers)
@@ -446,9 +433,8 @@ def get_product_listing(access_token, marketplace_id):
                         download_url = report_data.get('url')
                         download_response = requests.get(download_url)
                         df_txt = unzip_gzip_to_csv(download_response.content)
-                        #st.write(f" Report Status: {df_txt}")
                         return df_txt
-            print("The process is taking longer than expected by amazon to generate the report. Try later")
+            logging.info("The process is taking longer than expected by amazon to generate the report. Try later")
             return None
 
     except Exception as e:
