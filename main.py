@@ -201,7 +201,7 @@ def update_excel_with_sku_description():
         # Store the updated file in session state
         st.session_state.output_file = output
 
-        st.info("Successfully updated F1s.xlsx with SKU description information. Saved as F1s - Desc Added.xlsx.")
+        st.info("Successfully updated F1s.xlsx with SKU description information.")
 
     except Exception as e:
         #logging.error(f"An error occurred while updating the Excel file with SKU description: {e}")
@@ -210,12 +210,12 @@ def update_excel_with_sku_description():
 
 def update_excel_with_f1_to_use():
     try:
-        logging.info("Starting to update F1s - Desc Added.xlsx with F1 to Use.")
-        print("Starting to update F1s - Desc Added.xlsx with F1 to Use.")
+        st.info("Starting to update F1s with F1 to Use.")
+        #print("Starting to update F1s - Desc Added.xlsx with F1 to Use.")
 
-        # Open the existing Excel file for reading
-        input_file = 'F1s - Desc Added.xlsx'
-        output_file = 'F1s - Desc Added with F1 to Use.xlsx'
+        # Load the existing Excel file from session state
+        input_file = st.session_state.output_file
+        #output_file = 'F1s - Desc Added with F1 to Use.xlsx'
 
         # Fetch the CSV file from the URL
         url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRxBqpSTMwezeOji3KXDlrp3855sQHFuYxmKsCIDwILg4iHMEx2BBmp87nwEgI__4g3rM6H65rIp0sF/pub?gid=0&single=true&output=csv"
@@ -263,27 +263,29 @@ def update_excel_with_f1_to_use():
 
         # Close the read operation
         del xls
-
-        # Open a new Excel writer and write data
-        with pd.ExcelWriter(output_file) as writer:
+        # Write the updated data back to a BytesIO object
+        output = BytesIO()
+        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
             for sheet, df in df_dict.items():
                 logging.info(f"Writing updated data to sheet {sheet}.")
                 df.to_excel(writer, sheet_name=sheet, index=False)
 
-        logging.info(
-            "Successfully updated F1s - Desc Added.xlsx with F1 to Use information. Saved as F1s - Desc Added with F1 to Use.xlsx.")
+        output.seek(0)  # Reset the pointer of the BytesIO object
+        st.session_state.output_file = output
+
+        st.info(
+            "Successfully updated F1s with F1 to Use information.")
     except Exception as e:
         st.error(f"An error occurred while updating the Excel file with F1 to Use: {e}")
 
 
 def update_excel_with_barcodes(uploaded_barcodes):
     try:
-        logging.info("Starting to update F1s - Desc Added with F1 to Use.xlsx with Barcodes.")
+        st.info("Starting to update F1s file with Barcodes.")
         print("Starting to update F1s - Desc Added with F1 to Use.xlsx with Barcodes.")
 
-        # Open the existing Excel file for reading (already present in the backend)
-        input_file = 'F1s - Desc Added with F1 to Use.xlsx'
-        output_file = 'F1s - Barcode.xlsx'
+        input_file = st.session_state.output_file
+        #output_file = 'F1s - Barcode.xlsx'
 
         # Read the uploaded barcodes.csv file into a DataFrame, headers are on the 4th row (index 3)
         df_barcodes = pd.read_csv(uploaded_barcodes, header=3)
@@ -334,18 +336,19 @@ def update_excel_with_barcodes(uploaded_barcodes):
         # Close the read operation
         del xls
 
-        # Open a new Excel writer and write data
-        with pd.ExcelWriter(output_file) as writer:
+        # Write the updated data back to a BytesIO object
+        output = BytesIO()
+        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
             for sheet, df in df_dict.items():
                 logging.info(f"Writing updated data to sheet {sheet}.")
                 df.to_excel(writer, sheet_name=sheet, index=False)
 
-        logging.info(
-            "Successfully updated F1s - Desc Added with F1 to Use.xlsx with Barcodes. Saved as F1s - Barcode.xlsx."
-        )
+        output.seek(0)  # Reset the pointer of the BytesIO object
+        st.session_state.output_file = output
 
-        # Store the output file path in session state so it can be downloaded later
-        st.session_state.output_file = output_file
+        st.info(
+            "Successfully updated F1s file with Barcodes"
+        )
 
     except Exception as e:
         st.error(f"An error occurred while updating the Excel file with Barcodes: {e}")
@@ -487,10 +490,9 @@ def main():
                         update_excel_with_f1_to_use()
                         update_excel_with_barcodes(uploaded_barcodes)
     # Check if the output file exists and show download button
-    # if st.session_state.output_file is not None:
-    #     with open(st.session_state.output_file, "rb") as file:
-    #         st.download_button(label="Save File", data=file, file_name=st.session_state.output_file,
-    #                            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    if st.session_state.output_file is not None:
+        st.download_button(label="Save File", data=st.session_state.output_file.getvalue(), file_name="F1s - Barcode.xlsx",
+                               mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
 if __name__ == "__main__":
     main()
