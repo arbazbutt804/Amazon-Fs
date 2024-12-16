@@ -135,7 +135,7 @@ def update_excel_with_seller_sku(access_token):
         return True
 
     except Exception as e:
-        logging.error(f"An error occurred while updating the Excel file: {e}")
+        #logging.error(f"An error occurred while updating the Excel file: {e}")
         st.error(f"An error occurred while updating the Excel file: {e}")
 
 def read_txt_file(country):
@@ -155,7 +155,7 @@ def read_txt_file(country):
             logging.error(f"An error occurred while reading the .txt file for {country} with encoding {encoding}: {e}")
             return None
 
-    logging.error(f"All encoding attempts failed for {file_path}.")
+    st.error(f"All encoding attempts failed for {file_path}.")
     return None
 
 
@@ -220,8 +220,8 @@ def update_excel_with_sku_description():
         logging.info("Successfully updated F1s.xlsx with SKU description information. Saved as F1s - Desc Added.xlsx.")
 
     except Exception as e:
-        logging.error(f"An error occurred while updating the Excel file with SKU description: {e}")
-        st.error("An error occurred while updating the Excel file with SKU description")
+        #logging.error(f"An error occurred while updating the Excel file with SKU description: {e}")
+        st.error(f"An error occurred while updating the Excel file with SKU description: {e}")
 
 
 def update_excel_with_f1_to_use():
@@ -289,7 +289,7 @@ def update_excel_with_f1_to_use():
         logging.info(
             "Successfully updated F1s - Desc Added.xlsx with F1 to Use information. Saved as F1s - Desc Added with F1 to Use.xlsx.")
     except Exception as e:
-        logging.error(f"An error occurred while updating the Excel file with F1 to Use: {e}")
+        st.error(f"An error occurred while updating the Excel file with F1 to Use: {e}")
 
 
 def update_excel_with_barcodes(uploaded_barcodes):
@@ -364,8 +364,7 @@ def update_excel_with_barcodes(uploaded_barcodes):
         st.session_state.output_file = output_file
 
     except Exception as e:
-        logging.error(f"An error occurred while updating the Excel file with Barcodes: {e}")
-        st.error("An error occurred while updating the Excel file with Barcodes")
+        st.error(f"An error occurred while updating the Excel file with Barcodes: {e}")
 
 def unzip_gzip_to_csv(gzip_data):
     # Unzip GZIP data and convert it to a CSV format
