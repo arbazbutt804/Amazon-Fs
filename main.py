@@ -1,12 +1,15 @@
+import gzip
 import logging
+from datetime import time
+import json
+
 import pandas as pd
 import requests
 import os
 import streamlit as st
 
-from io import StringIO
+from io import StringIO, BytesIO
 from dotenv import load_dotenv
-from MarketplaceConnector import MarketplaceCommunication
 
 # Set up logging with time and date
 logging.basicConfig(
@@ -44,7 +47,7 @@ def analyze_idq(uploaded_file):
         logging.error(f"An unexpected error occurred during the initial IDQ analysis: {e}")
         st.error("An unexpected error occurred during the initial IDQ analysis")
 
-def update_excel_with_seller_sku(access_token, marketplace_communication):
+def update_excel_with_seller_sku(access_token):
     marketplace_id_mapping = {
         "UK": "A1F83G8C2ARO7P",
         "DE": "A1PA6795UKMFR9",
@@ -85,7 +88,7 @@ def update_excel_with_seller_sku(access_token, marketplace_communication):
             df_excel = pd.read_excel(input_file, sheet_name=sheet)
 
             # Read the corresponding .txt file into a DataFrame (assume the file is uploaded as well)
-            df_txt = marketplace_communication.get_product_listing(access_token,marketplace_id)
+            df_txt = get_product_listing(access_token,marketplace_id)
             #df_txt = read_txt_file(sheet)
 
             # Check if df_txt is None and handle the error
@@ -361,10 +364,108 @@ def update_excel_with_barcodes(uploaded_barcodes):
         logging.error(f"An error occurred while updating the Excel file with Barcodes: {e}")
         st.error("An error occurred while updating the Excel file with Barcodes")
 
+def unzip_gzip_to_csv(gzip_data):
+    # Unzip GZIP data and convert it to a CSV format
+    try:
+        with gzip.GzipFile(fileobj=BytesIO(gzip_data), mode='rb') as f:
+            # Read the decompressed content into a DataFrame (assuming the data is CSV format)
+            df = pd.read_csv(f, encoding='windows-1252', delimiter='\t')
+            # Parse the DataFrame to keep only the 'seller-sku' and 'asin1' columns
+    except (OSError, gzip.BadGzipFile) as e:
+        print("Not a GZIP file. Trying as plain CSV...")
+        # If decompression fails, treat it as a plain CSV file
+        df = pd.read_csv(BytesIO(gzip_data), encoding='windows-1252', delimiter='\t')
+    if 'seller-sku' in df.columns and 'asin1' in df.columns:
+        parsed_df = df[['seller-sku', 'asin1']]
+    elif 'seller-sku' in df.columns and 'product-id' in df.columns:
+        df.rename(columns={'product-id': 'asin1'}, inplace=True)
+        parsed_df = df[['seller-sku', 'asin1']]
+    else:
+        # If columns are not found, raise an error or handle accordingly
+        parsed_df = None
+        print("Error: 'seller-sku' and 'asin1' columns not found in the data.")
+    return parsed_df
+
+def get_access_token():
+    payload = {
+        'grant_type': 'refresh_token',
+        'refresh_token': AWS_REFRESH_TOKEN,
+        'client_id': AWS_CLIENT_ID,
+        'client_secret': AWS_CLIENT_SECRET
+    }
+    try:
+        marketplace_headers = {
+            'Content-Type': 'application/x-www-form-urlencoded'
+        }
+        # Make the request to get access token
+        response = requests.post(AWS_TOKEN_URL, headers= marketplace_headers, data=payload)
+
+        # Check if request was successful
+        if response.status_code == 200:
+            token_data = response.json()
+            #print(f"response {token_data}.")
+            access_token = token_data['access_token']
+            return access_token
+        else:
+            message = f"Error fetching access token: {response.status_code} - {response.text}"
+            return None
+    except Exception as e:
+        message = f"Exception occurred while fetching access token: {str(e)}"
+        return None
+
+def get_product_listing(self, access_token, marketplace_id):
+    max_retries = 10  # Maximum number of retries
+    retries = 0
+    # API URL for creating a report
+    api_url = f"{self.base_url}/reports/2021-06-30/reports"
+    # API request headers
+    headers = {
+        'Authorization': f"Bearer {access_token}",
+        'Content-Type': 'application/json',
+        'x-amz-access-token': access_token,
+    }
+
+    # body of the request
+    body = {
+        "reportType": "GET_MERCHANT_LISTINGS_DATA",
+        "marketplaceIds": [marketplace_id]
+    }
+    try:
+        response = requests.post(api_url, headers=headers, data=json.dumps(body))
+        # Check if the request was successful
+        if response.status_code == 202:  # Status 202 indicates the report request was accepted
+            report_data = response.json()
+            report_id = report_data.get('reportId')
+            #print(f"print  {report_id}")
+            api_url = f"{self.base_url}/reports/2021-06-30/reports/{report_id}"
+            while retries < max_retries:
+                response_reports = requests.get(api_url, headers=headers)
+                if response_reports.status_code == 200:
+                    report_status = response_reports.json()
+                    status = report_status.get("processingStatus")
+                    if status in ("IN_QUEUE", "INPROGRESS", "IN_PROGRESS"):
+                        print(f"Status: {status} Retrying after 25 seconds...")
+                        time.sleep(25)
+                        retries += 1
+                    elif status == "DONE":
+                        print(f" Report Status: {status}")
+                        report_document_id = report_status.get('reportDocumentId')
+                        api_url = f"{self.base_url}/reports/2021-06-30/documents/{report_document_id}"
+                        response = requests.get(api_url, headers=headers)
+                        report_data = response.json()
+                        download_url = report_data.get('url')
+                        download_response = requests.get(download_url)
+                        df_txt = self.unzip_gzip_to_csv(download_response.content)
+                        return df_txt
+            print("The process is taking longer than expected by amazon to generate the report. Try later")
+            return None
+
+    except Exception as e:
+        message = f"Exception while submitting feed: {e}"
+        return None
+
 
 def main():
-    marketplace_communication = MarketplaceCommunication(MARKETPLACE_BASE_URL, AWS_CLIENT_ID, AWS_CLIENT_SECRET,
-                                                         AWS_TOKEN_URL, marketplace_name, AWS_REFRESH_TOKEN)
     st.set_page_config(page_title="IDQ File Processor", page_icon="📄")
 
     st.markdown(
@@ -393,9 +494,9 @@ def main():
         # When a file is uploaded, run the analysis
         with st.spinner("Processing your files. This may take a few moments..."):
             if analyze_idq(uploaded_file):
-                access_token = marketplace_communication.get_access_token()
+                access_token = get_access_token()
                 if access_token:
-                    if update_excel_with_seller_sku(access_token,marketplace_communication):
+                    if update_excel_with_seller_sku(access_token):
                         update_excel_with_sku_description()
                         update_excel_with_f1_to_use()
                         update_excel_with_barcodes(uploaded_barcodes)
