@@ -450,11 +450,11 @@ def get_product_listing(access_token, marketplace_id):
                     report_status = response_reports.json()
                     status = report_status.get("processingStatus")
                     if status in ("IN_QUEUE", "INPROGRESS", "IN_PROGRESS"):
-                        print(f"Status: {status} Retrying after 25 seconds...")
+                        st.write(f"Status: {status} Retrying after 25 seconds...")
                         time.sleep(25)
                         retries += 1
                     elif status == "DONE":
-                        print(f" Report Status: {status}")
+                        st.write(f" Report Status: {status}")
                         report_document_id = report_status.get('reportDocumentId')
                         api_url = f"{MARKETPLACE_BASE_URL}/reports/2021-06-30/documents/{report_document_id}"
                         response = requests.get(api_url, headers=headers)
@@ -462,6 +462,7 @@ def get_product_listing(access_token, marketplace_id):
                         download_url = report_data.get('url')
                         download_response = requests.get(download_url)
                         df_txt = unzip_gzip_to_csv(download_response.content)
+                        st.write(f" Report Status: {df_txt}")
                         return df_txt
             print("The process is taking longer than expected by amazon to generate the report. Try later")
             return None
