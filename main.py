@@ -9,7 +9,6 @@ import os
 import streamlit as st
 
 from io import StringIO, BytesIO
-from dotenv import load_dotenv
 
 # Set up logging with time and date
 logging.basicConfig(
@@ -19,7 +18,6 @@ logging.basicConfig(
     datefmt='%Y-%m-%d %H:%M:%S'
 )
 
-load_dotenv()
 # Marketplace API setup
 MARKETPLACE_BASE_URL = st.secrets["MARKETPLACE_BASE_URL"]
 AWS_CLIENT_ID = st.secrets["AWS_CLIENT_ID"]
@@ -71,7 +69,7 @@ def update_excel_with_seller_sku(access_token):
         # Read the Excel file into a DataFrame
         xls = pd.ExcelFile(input_file)
         sheet_names = xls.sheet_names
-        st.info(f"Found sheet names: {sheet_names}")
+        #st.info(f"Found sheet names: {sheet_names}")
 
         # Store dataframes temporarily
         df_dict = {}
@@ -87,6 +85,7 @@ def update_excel_with_seller_sku(access_token):
             # Read the corresponding .txt file into a DataFrame (assume the file is uploaded as well)
             df_txt = get_product_listing(access_token,marketplace_id)
             #df_txt = read_txt_file(sheet)
+            st.write("run successfully")
 
             # Check if df_txt is None and handle the error
             if df_txt is None:
@@ -412,20 +411,19 @@ def get_access_token():
             token_data = response.json()
             #print(f"response {token_data}.")
             access_token = token_data['access_token']
-            st.info(f"fetching access token: {response.status_code}")
             return access_token
         else:
-            st.info(f"Error fetching access token: {response.status_code}")
+            st.info(f"Error fetching access token for amazon: {response.status_code}")
             return None
     except Exception as e:
         message = f"Exception occurred while fetching access token: {str(e)}"
         return None
 
-def get_product_listing(self, access_token, marketplace_id):
+def get_product_listing(access_token, marketplace_id):
     max_retries = 10  # Maximum number of retries
     retries = 0
     # API URL for creating a report
-    api_url = f"{self.base_url}/reports/2021-06-30/reports"
+    api_url = f"{MARKETPLACE_BASE_URL}/reports/2021-06-30/reports"
     # API request headers
     headers = {
         'Authorization': f"Bearer {access_token}",
@@ -445,7 +443,7 @@ def get_product_listing(self, access_token, marketplace_id):
             report_data = response.json()
             report_id = report_data.get('reportId')
             #print(f"print  {report_id}")
-            api_url = f"{self.base_url}/reports/2021-06-30/reports/{report_id}"
+            api_url = f"{MARKETPLACE_BASE_URL}/reports/2021-06-30/reports/{report_id}"
             while retries < max_retries:
                 response_reports = requests.get(api_url, headers=headers)
                 if response_reports.status_code == 200:
@@ -458,12 +456,12 @@ def get_product_listing(self, access_token, marketplace_id):
                     elif status == "DONE":
                         print(f" Report Status: {status}")
                         report_document_id = report_status.get('reportDocumentId')
-                        api_url = f"{self.base_url}/reports/2021-06-30/documents/{report_document_id}"
+                        api_url = f"{MARKETPLACE_BASE_URL}/reports/2021-06-30/documents/{report_document_id}"
                         response = requests.get(api_url, headers=headers)
                         report_data = response.json()
                         download_url = report_data.get('url')
                         download_response = requests.get(download_url)
-                        df_txt = self.unzip_gzip_to_csv(download_response.content)
+                        df_txt = unzip_gzip_to_csv(download_response.content)
                         return df_txt
             print("The process is taking longer than expected by amazon to generate the report. Try later")
             return None
@@ -504,7 +502,6 @@ def main():
             if analyze_idq(uploaded_file):
                 access_token = get_access_token()
                 if access_token:
-                    st.info("Found sheet names6")
                     if update_excel_with_seller_sku(access_token):
                         update_excel_with_sku_description()
                         update_excel_with_f1_to_use()
