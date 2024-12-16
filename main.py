@@ -442,7 +442,7 @@ def get_product_listing(access_token, marketplace_id):
         if response.status_code == 202:  # Status 202 indicates the report request was accepted
             report_data = response.json()
             report_id = report_data.get('reportId')
-            #print(f"print  {report_id}")
+            st.write(f"print  {report_id}")
             api_url = f"{MARKETPLACE_BASE_URL}/reports/2021-06-30/reports/{report_id}"
             while retries < max_retries:
                 response_reports = requests.get(api_url, headers=headers)
@@ -450,7 +450,6 @@ def get_product_listing(access_token, marketplace_id):
                     report_status = response_reports.json()
                     status = report_status.get("processingStatus")
                     if status in ("IN_QUEUE", "INPROGRESS", "IN_PROGRESS"):
-                        st.write(f"Status: {status} Retrying after 25 seconds...")
                         time.sleep(25)
                         retries += 1
                     elif status == "DONE":
