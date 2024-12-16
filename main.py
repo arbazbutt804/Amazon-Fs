@@ -85,7 +85,7 @@ def update_excel_with_seller_sku(access_token):
             # Read the corresponding .txt file into a DataFrame (assume the file is uploaded as well)
             df_txt = get_product_listing(access_token,marketplace_id)
             #df_txt = read_txt_file(sheet)
-            st.write("run successfully")
+            #st.write("run successfully")
 
             # Check if df_txt is None and handle the error
             if df_txt is None:
@@ -118,49 +118,25 @@ def update_excel_with_seller_sku(access_token):
 
             df_dict[sheet] = merged_df
         del xls
-        # Open a new Excel writer and write data
-        with pd.ExcelWriter(input_file) as writer:
-            for sheet, df in df_dict.items():
-                logging.info(f"Writing updated data to sheet {sheet}.")
-                df.to_excel(writer, sheet_name=sheet, index=False)
 
         output = BytesIO()
         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
             for sheet, df in df_dict.items():
                 logging.info(f"Writing updated data to sheet {sheet}.")
                 df.to_excel(writer, sheet_name=sheet, index=False)
+                st.write("ok dokie")
 
         output.seek(0)
 
         # Store the updated file in session state
         st.session_state.output_file = output
 
-        logging.info("Successfully updated F1s.xlsx with Seller SKU information.")
+        st.info("Successfully updated F1s.xlsx with Seller SKU information.")
         return True
 
     except Exception as e:
         #logging.error(f"An error occurred while updating the Excel file: {e}")
         st.error(f"An error occurred while updating the Excel file: {e}")
-
-def read_txt_file(country):
-    # Define the file path (you can change this to match your backend file path)
-    file_path = f"{country} Amazon.txt"
-    encodings = ['utf-8', 'ISO-8859-1', 'latin1', 'cp1252']
-
-    for encoding in encodings:
-        try:
-            # Read the file with the current encoding
-            df = pd.read_csv(file_path, sep='\t', encoding=encoding)
-            logging.info(f"Successfully read {file_path} with encoding {encoding}.")
-            return df
-        except UnicodeDecodeError:
-            logging.warning(f"Failed to read {file_path} with encoding {encoding}. Trying next encoding.")
-        except Exception as e:
-            logging.error(f"An error occurred while reading the .txt file for {country} with encoding {encoding}: {e}")
-            return None
-
-    st.error(f"All encoding attempts failed for {file_path}.")
-    return None
 
 
 def update_excel_with_sku_description():
@@ -450,10 +426,10 @@ def get_product_listing(access_token, marketplace_id):
                     report_status = response_reports.json()
                     status = report_status.get("processingStatus")
                     if status in ("IN_QUEUE", "INPROGRESS", "IN_PROGRESS"):
-                        time.sleep(25)
+                        time.sleep(30)
                         retries += 1
                     elif status == "DONE":
-                        st.write(f" Report Status: {status}")
+                        #st.write(f" Report Status: {status}")
                         report_document_id = report_status.get('reportDocumentId')
                         api_url = f"{MARKETPLACE_BASE_URL}/reports/2021-06-30/documents/{report_document_id}"
                         response = requests.get(api_url, headers=headers)
@@ -461,7 +437,7 @@ def get_product_listing(access_token, marketplace_id):
                         download_url = report_data.get('url')
                         download_response = requests.get(download_url)
                         df_txt = unzip_gzip_to_csv(download_response.content)
-                        st.write(f" Report Status: {df_txt}")
+                        #st.write(f" Report Status: {df_txt}")
                         return df_txt
             print("The process is taking longer than expected by amazon to generate the report. Try later")
             return None
