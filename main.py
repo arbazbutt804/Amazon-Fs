@@ -1,6 +1,6 @@
 import gzip
 import logging
-from datetime import time
+import time
 import json
 
 import pandas as pd
