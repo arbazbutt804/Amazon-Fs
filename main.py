@@ -508,10 +508,10 @@ def main():
                         update_excel_with_f1_to_use()
                         update_excel_with_barcodes(uploaded_barcodes)
     # Check if the output file exists and show download button
-    if st.session_state.output_file is not None:
-        with open(st.session_state.output_file, "rb") as file:
-            st.download_button(label="Save File", data=file, file_name=st.session_state.output_file,
-                               mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    # if st.session_state.output_file is not None:
+    #     with open(st.session_state.output_file, "rb") as file:
+    #         st.download_button(label="Save File", data=file, file_name=st.session_state.output_file,
+    #                            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
 if __name__ == "__main__":
     main()
