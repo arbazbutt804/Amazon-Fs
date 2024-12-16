@@ -61,7 +61,7 @@ def update_excel_with_seller_sku(access_token):
         "SE": "A2NODRKZP88ZB9"
     }
     try:
-        logging.info("Starting to update F1s.xlsx with Seller SKU.")
+        st.info("Starting to update F1s.xlsx with Seller SKU.")
 
         # Load the Excel file from session state
         input_file = st.session_state.output_file
@@ -124,7 +124,6 @@ def update_excel_with_seller_sku(access_token):
             for sheet, df in df_dict.items():
                 logging.info(f"Writing updated data to sheet {sheet}.")
                 df.to_excel(writer, sheet_name=sheet, index=False)
-                st.write("ok dokie")
 
         output.seek(0)
 
@@ -141,12 +140,12 @@ def update_excel_with_seller_sku(access_token):
 
 def update_excel_with_sku_description():
     try:
-        logging.info("Starting to update F1s.xlsx with SKU description.")
-        print("Starting to update F1s.xlsx with SKU description.")
+        st.info("Starting to update F1s.xlsx with SKU description.")
+        #print("Starting to update F1s.xlsx with SKU description.")
 
-        # Open the existing Excel file for reading
-        input_file = 'F1s.xlsx'
-        output_file = 'F1s - Desc Added.xlsx'
+        # Load the Excel file from session state
+        input_file = st.session_state.output_file
+        #output_file = 'F1s - Desc Added.xlsx'
         csv_file = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vS_mN7-KwnH2aN-afhBMbM_1IlBylxwgJByEkQU5M3HJQuSDx8-pk3HwaJ5TOLgNeD0SGcdgHikloFK/pub?gid=788370787&single=true&output=csv'
 
         # Read the CSV file into a DataFrame
@@ -191,13 +190,18 @@ def update_excel_with_sku_description():
         # Close the read operation
         del xls
 
-        # Open a new Excel writer and write data
-        with pd.ExcelWriter(output_file) as writer:
+        output = BytesIO()
+        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
             for sheet, df in df_dict.items():
                 logging.info(f"Writing updated data to sheet {sheet}.")
                 df.to_excel(writer, sheet_name=sheet, index=False)
 
-        logging.info("Successfully updated F1s.xlsx with SKU description information. Saved as F1s - Desc Added.xlsx.")
+        output.seek(0)
+
+        # Store the updated file in session state
+        st.session_state.output_file = output
+
+        st.info("Successfully updated F1s.xlsx with SKU description information. Saved as F1s - Desc Added.xlsx.")
 
     except Exception as e:
         #logging.error(f"An error occurred while updating the Excel file with SKU description: {e}")
@@ -418,7 +422,7 @@ def get_product_listing(access_token, marketplace_id):
         if response.status_code == 202:  # Status 202 indicates the report request was accepted
             report_data = response.json()
             report_id = report_data.get('reportId')
-            st.write(f"print  {report_id}")
+            #st.write(f"print  {report_id}")
             api_url = f"{MARKETPLACE_BASE_URL}/reports/2021-06-30/reports/{report_id}"
             while retries < max_retries:
                 response_reports = requests.get(api_url, headers=headers)
