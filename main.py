@@ -458,8 +458,8 @@ def main():
         .css-1offfwp {padding-top: 1rem;}
         .css-1v3fvcr {background-color: #f8f9fa !important;}
         .block-container {padding: 7rem !important;}
-        .stButton button {background-color: #4CAF50; color: white; border: none; border-radius: 5px; padding: 10px 20px; font-size: 16px; cursor: pointer;}
-        .stButton button:hover {background-color: #45a049;}
+        .stButton button, .stDownloadButton button {background-color: #4CAF50; color: white; border: none; border-radius: 5px; padding: 10px 20px; font-size: 16px; cursor: pointer;}
+        .stButton button:hover, .stDownloadButton button:hover {background-color: #45a049;}
         .stFileUploader {border: 2px dashed #4CAF50 !important; border-radius: 10px;}
         </style>""", unsafe_allow_html=True)
     # File uploader widget for the user to upload their IDQ file
@@ -477,10 +477,21 @@ def main():
                         update_excel_with_sku_description()
                         update_excel_with_f1_to_use()
                         update_excel_with_barcodes(uploaded_barcodes)
-    # Check if the output file exists and show download button
     if st.session_state.output_file is not None:
-        st.download_button(label="Save File", data=st.session_state.output_file.getvalue(), file_name="F1s - Barcode.xlsx",
-                               mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        # Use Streamlit columns to place buttons side-by-side
+        col1, col2, col3 = st.columns([0.1, 1, 1])
+        # Column 1: Download Button
+        with col2:
+            with open(st.session_state.output_file, "rb") as file:
+                st.download_button(label="Save File", data=file, file_name=st.session_state.output_file,
+                                   mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+        # Column 2: Trigger Asana Functionality
+        with col3:
+            if st.button("Create Asana Tasks"):
+                st.info("Starting Asana task creation...")
+                create_asana_tasks_from_excel(send_to_asana=False)  # Call your function here
+                st.success("Asana tasks created successfully!")
 
 if __name__ == "__main__":
     main()
