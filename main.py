@@ -245,7 +245,10 @@ def update_excel_with_f1_to_use():
                     if not found_row.empty:
                         # Take the last non-empty value from the row
                         last_non_empty_value = found_row.iloc[0, :].dropna().iloc[-1]
-                        f1_to_use_values.append(last_non_empty_value)
+                        if last_non_empty_value == sku:
+                            f1_to_use_values.append(None)
+                        else:
+                            f1_to_use_values.append(last_non_empty_value)
                     else:
                         f1_to_use_values.append(None)
 
