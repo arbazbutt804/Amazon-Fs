@@ -28,6 +28,8 @@ AWS_TOKEN_URL = st.secrets["AWS_TOKEN_URL"]
 AWS_REFRESH_TOKEN = st.secrets["AWS_REFRESH_TOKEN"]
 ASANA_TOKEN = st.secrets["ASANA_TOKEN"]
 marketplace_name = "amazon"
+
+st.set_page_config(page_title="IDQ File Processor", page_icon="📄")
 # Initialize session state for keeping track of file paths
 if "output_file" not in st.session_state:
     st.session_state.output_file = None
@@ -634,7 +636,6 @@ message_placeholder = st.empty()
 
 
 def main():
-    st.set_page_config(page_title="IDQ File Processor", page_icon="📄")
 
     st.markdown(
         """
