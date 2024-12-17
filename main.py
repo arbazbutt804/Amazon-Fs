@@ -26,6 +26,7 @@ AWS_CLIENT_ID = st.secrets["AWS_CLIENT_ID"]
 AWS_CLIENT_SECRET = st.secrets["AWS_CLIENT_SECRET"]
 AWS_TOKEN_URL = st.secrets["AWS_TOKEN_URL"]
 AWS_REFRESH_TOKEN = st.secrets["AWS_REFRESH_TOKEN"]
+ASANA_TOKEN = st.secrets["ASANA_TOKEN"]
 marketplace_name = "amazon"
 # Initialize session state for keeping track of file paths
 if "output_file" not in st.session_state:
@@ -440,6 +441,191 @@ def get_product_listing(access_token, marketplace_id):
     except Exception as e:
         message = f"Exception while submitting feed: {e}"
         return None
+
+def create_asana_tasks_from_excel(send_to_asana=False):
+    print("create_asana_tasks_from_excel")
+    if not send_to_asana:
+        st.info("Task creation in Asana is disabled.")
+        return
+
+    # Asana API setup
+    url = "https://app.asana.com/api/1.0/tasks?opt_fields="
+    headers = {
+        "accept": "application/json",
+        "content-type": "application/json",
+        "authorization": f"Bearer {ASANA_TOKEN}"
+    }
+
+    # Load the updated F1s Excel file
+    input_file = st.session_state.output_file
+    for sheet_name in pd.ExcelFile(input_file).sheet_names:
+        df = pd.read_excel(input_file, sheet_name=sheet_name)
+
+        # Check if 'EAN' column exists in the DataFrame
+        if 'EAN' not in df.columns:
+            print("The 'EAN' column is missing in the Excel sheet.")
+            continue  # Skip processing this sheet if 'EAN' is missing
+
+        # Fetch existing tasks for the current project
+        project_id = country_project_map.get(sheet_name, 'default_project_id')
+        existing_task_names = fetch_existing_asana_tasks(project_id, headers)
+
+        for idx, row in df.iterrows():
+            ean_value = row['EAN']
+
+            # Remove any leading apostrophes if the EAN is a string
+            if isinstance(ean_value, str):
+                ean_value = ean_value.lstrip("'")
+            # Convert float EAN values to integer and then to string, but only if it's not NaN
+            elif isinstance(ean_value, float) and not pd.isna(ean_value):
+                ean_value = str(int(ean_value))
+
+            if pd.notna(ean_value) and isinstance(ean_value, str):
+                if isinstance(ean_value, int):
+                    ean_value = str(ean_value)
+
+                # Value is valid, proceed with task creation
+                task_name = f"F1 for {row['Seller SKU']} - {row['Sku description']}"
+
+                if task_name in existing_task_names:
+                    logging.warning(
+                        f"Task already exists for SKU {row['Seller SKU']} in country {sheet_name}, skipping Asana task creation.")
+                    continue
+                sku_to_f1 = row['Seller SKU']
+                new_f1_sku = row['F1 to Use']
+                new_f1_ean = ean_value.replace("'", "")  # Remove single quotes
+                new_f1_brand = row['GS1 Brand']
+                projects = [country_project_map.get(sheet_name, 'default_project_id')]
+
+                notes_content = (f"<body><b>SKU to be F1'd:</b> {sku_to_f1}\n"
+                                 f"<b>New F1 SKU:</b> {new_f1_sku}\n"
+                                 f"<b>New F1 EAN:</b> {new_f1_ean}\n"
+                                 f"<b>New F1 Brand:</b> {new_f1_brand}\n"
+                                 "\n"
+                                 "<b>PLEASE TICK EACH ITEM ON YOUR CHECKLIST AS YOU GO</b></body>")
+
+                # Look up the tag ID based on the sheet name
+                tags = [country_tag_map.get(sheet_name, 'default_tag_id')]
+
+                payload = {
+                    "data": {
+                        "projects": projects,
+                        "name": task_name,
+                        "html_notes": notes_content,
+                        "tags": tags  # Use the looked-up tag ID here
+                    }
+                }
+
+                response = requests.post(url, json=payload, headers=headers)
+                print(f"Sending payload: {payload}")
+                task_data = response.json()
+
+                # Check if task creation was successful and move it to the appropriate section
+                if 'data' in task_data and 'gid' in task_data['data']:
+                    task_gid = task_data['data']['gid']
+                    section_id = country_section_map.get(sheet_name, 'default_section_id')
+                    move_url = f"https://app.asana.com/api/1.0/sections/{section_id}/addTask"
+                    move_payload = {
+                        "data": {
+                            "task": task_gid
+                        }
+                    }
+                    move_response = requests.post(move_url, json=move_payload, headers=headers)
+                    print(f"Moved task {task_gid} to section {section_id}. Response: {move_response.json()}")
+                else:
+                    logging.error(f"Failed to create task for SKU {row['Seller SKU']} in country {sheet_name}. Response: {task_data}")
+
+            else:
+                print(
+                    f"EAN '{ean_value}' (data type: {type(ean_value)}) is not a valid value for SKU {row['Seller SKU']} in country {sheet_name}. Skipping Asana task creation.")
+                if row['Seller SKU'] not in unique_seller_skus:
+                    unique_seller_skus.add(row['Seller SKU'])  # Add to the unique set
+
+                    # Add to the list of tasks needing new EANs
+                    new_eans_needed.append({
+                        'Seller SKU': row['Seller SKU'],
+                        'Sku description': row['Sku description']
+                    })
+
+    if new_eans_needed:
+        # Create the main task
+        main_task_payload = {
+            "data": {
+                "name": "NEW F1's Needed",
+                "assignee": "1202218809921567",
+                "html_notes": "<body><b>Please can the following new F1's be created and added to the F1 Log <a href=\"https://docs.google.com/spreadsheets/d/1JesoDfHewylxsso0luFrY6KDclv3kvNjugnvMjRH2ak/edit#gid=0\" target=\"_blank\">here</a></b></body>",
+                "followers": ["greg.stephenson@monstergroupuk.co.uk, 1202218809921567"],
+                "workspace": "17406368418784"
+            }
+        }
+        main_task_response = requests.post(url, json=main_task_payload, headers=headers)
+        main_task_data = main_task_response.json()
+        main_task_gid = main_task_data['data']['gid']
+
+        # Create subtasks
+        subtask_url = f"https://app.asana.com/api/1.0/tasks/{main_task_gid}/subtasks"
+        for task in new_eans_needed:
+            subtask_name = f"{task['Seller SKU']} - {task['Sku description']}"
+            subtask_payload = {
+                "data": {
+                    "name": subtask_name
+                }
+            }
+            subtask_response = requests.post(subtask_url, json=subtask_payload)
+            print(f"Added subtask: {subtask_name}. Response: {subtask_response.json()}")
+
+
+def fetch_existing_asana_tasks(project_id, headers):
+    print("fetch_existing_asana_tasks")
+    url = f"https://app.asana.com/api/1.0/tasks?project={project_id}&opt_fields=name"
+    response = requests.get(url, headers=headers)
+    if response.status_code == 200:
+        return [task['name'] for task in json.loads(response.text)['data']]
+    else:
+        return []
+
+
+# Country-to-project ID mapping
+country_project_map = {
+    'UK': '1205420991974313',
+    'FR': '1205436216136660',
+    'BE': '1205436216136660',
+    'DE': '1205436216136667',
+    'IT': '1205436216136683',
+    'ES': '1205436216136678',
+    'SE': '1205436216136688',
+    'NL': '1205436216136693'
+    # Add other countries here
+}
+country_section_map = {
+    'UK': '1205420991974320',
+    'FR': '1205436216136664',
+    'BE': '1205436216136697',
+    'DE': '1205436216136669',
+    'IT': '1205436216136685',
+    'ES': '1205436216136680',
+    'SE': '1205436216136690',
+    'NL': '1205436216136695'
+}
+
+# Country-to-tag ID mapping
+country_tag_map = {
+    'UK': '1205430582965096',
+    'FR': '1205436216136698',
+    'BE': '1205436216136703',
+    'DE': '1205436216136699',
+    'IT': '1205436216136700',
+    'ES': '1205436216136701',
+    'SE': '1205436216136704',
+    'NL': '1205436216136702'
+    # Add other countries and their tag IDs here
+}
+
+# Initialize an empty set to store unique seller-skus
+unique_seller_skus = set()
+
+# Initialize an empty list to store tasks with missing EANs
+new_eans_needed = []
 
 
 def main():
