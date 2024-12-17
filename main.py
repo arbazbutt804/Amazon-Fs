@@ -630,6 +630,8 @@ unique_seller_skus = set()
 # Initialize an empty list to store tasks with missing EANs
 new_eans_needed = []
 
+message_placeholder = st.empty()
+
 
 def main():
     st.set_page_config(page_title="IDQ File Processor", page_icon="📄")
@@ -667,6 +669,7 @@ def main():
                         update_excel_with_f1_to_use()
                         update_excel_with_barcodes(uploaded_barcodes)
     if st.session_state.output_file is not None:
+        message_placeholder.empty()
         # Use Streamlit columns to place buttons side-by-side
         col1, col2, col3 = st.columns([0.1, 1, 1])
         # Column 1: Download Button
