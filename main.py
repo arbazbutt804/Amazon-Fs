@@ -16,7 +16,7 @@ logging.basicConfig(
     format="%(asctime)s - %(levelname)s - %(message)s",
     handlers=[
         logging.StreamHandler(),  # Logs to the terminal (good for Streamlit Cloud)
-        logging.FileHandler("app.log")  # Logs to a file (optional)
+        #logging.FileHandler("app.log")  # Logs to a file (optional)
     ]
 )
 
