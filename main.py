@@ -62,7 +62,7 @@ def update_excel_with_seller_sku(access_token):
         "SE": "A2NODRKZP88ZB9"
     }
     try:
-        message_placeholder.info("Starting to update F1s.xlsx with Seller SKU.")
+        st.info("Starting to update F1s.xlsx with Seller SKU.")
 
         # Load the Excel file from session state
         input_file = st.session_state.output_file
@@ -128,7 +128,7 @@ def update_excel_with_seller_sku(access_token):
         # Store the updated file in session state
         st.session_state.output_file = output
 
-        message_placeholder.info("Successfully updated F1s.xlsx with Seller SKU information.")
+        st.info("Successfully updated F1s.xlsx with Seller SKU information.")
         return True
 
     except Exception as e:
@@ -137,7 +137,7 @@ def update_excel_with_seller_sku(access_token):
 
 def update_excel_with_sku_description():
     try:
-        message_placeholder.info("Starting to update F1s.xlsx with SKU description.")
+        st.info("Starting to update F1s.xlsx with SKU description.")
         logging.info("Starting to update F1s.xlsx with SKU description.")
 
         # Load the Excel file from session state
@@ -198,7 +198,7 @@ def update_excel_with_sku_description():
         # Store the updated file in session state
         st.session_state.output_file = output
 
-        message_placeholder.info("Successfully updated F1s.xlsx with SKU description information.")
+        st.info("Successfully updated F1s.xlsx with SKU description information.")
 
     except Exception as e:
         st.error(f"An error occurred while updating the Excel file with SKU description: {e}")
@@ -206,7 +206,7 @@ def update_excel_with_sku_description():
 
 def update_excel_with_f1_to_use():
     try:
-        message_placeholder.info("Starting to update F1s with F1 to Use.")
+        st.info("Starting to update F1s with F1 to Use.")
 
         # Load the existing Excel file from session state
         input_file = st.session_state.output_file
@@ -270,7 +270,7 @@ def update_excel_with_f1_to_use():
         output.seek(0)  # Reset the pointer of the BytesIO object
         st.session_state.output_file = output
 
-        message_placeholder.info(
+        st.info(
             "Successfully updated F1s with F1 to Use information.")
     except Exception as e:
         st.error(f"An error occurred while updating the Excel file with F1 to Use: {e}")
@@ -278,7 +278,7 @@ def update_excel_with_f1_to_use():
 
 def update_excel_with_barcodes(uploaded_barcodes):
     try:
-        message_placeholder.info("Starting to update F1s File with Barcodes.")
+        st.info("Starting to update F1s File with Barcodes.")
         logging.info("Starting to update F1s File with Barcodes.")
 
         input_file = st.session_state.output_file
@@ -342,7 +342,7 @@ def update_excel_with_barcodes(uploaded_barcodes):
         output.seek(0)  # Reset the pointer of the BytesIO object
         st.session_state.output_file = output
 
-        message_placeholder.info(
+        st.info(
             "Successfully updated F1s file with Barcodes"
         )
 
@@ -630,8 +630,6 @@ unique_seller_skus = set()
 # Initialize an empty list to store tasks with missing EANs
 new_eans_needed = []
 
-message_placeholder = st.empty()
-
 
 def main():
     st.set_page_config(page_title="IDQ File Processor", page_icon="📄")
@@ -669,7 +667,6 @@ def main():
                         update_excel_with_f1_to_use()
                         update_excel_with_barcodes(uploaded_barcodes)
     if st.session_state.output_file is not None:
-        message_placeholder.empty()
         # Use Streamlit columns to place buttons side-by-side
         col1, col2, col3 = st.columns([0.1, 1, 1])
         # Column 1: Download Button
@@ -682,7 +679,7 @@ def main():
             if st.button("Create Asana Tasks"):
                 st.info("Starting Asana task creation...")
                 create_asana_tasks_from_excel(send_to_asana=False)  # Call your function here
-                #st.success("Asana tasks created successfully!")
+                st.success("Asana tasks created successfully!")
 
 if __name__ == "__main__":
     main()
