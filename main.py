@@ -668,9 +668,8 @@ def main():
         col1, col2, col3 = st.columns([0.1, 1, 1])
         # Column 1: Download Button
         with col2:
-            with open(st.session_state.output_file, "rb") as file:
-                st.download_button(label="Save File", data=file, file_name=st.session_state.output_file,
-                                   mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+            st.download_button(label="Save File", data=st.session_state.output_file, file_name=F1_Barcodes.xlsx,
+                               mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
         # Column 2: Trigger Asana Functionality
         with col3:
