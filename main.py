@@ -632,9 +632,6 @@ unique_seller_skus = set()
 # Initialize an empty list to store tasks with missing EANs
 new_eans_needed = []
 
-message_placeholder = st.empty()
-
-
 def main():
 
     st.markdown(
@@ -662,6 +659,7 @@ def main():
     if uploaded_file is not None and uploaded_barcodes is not None and st.session_state.output_file is None:
         # When a file is uploaded, run the analysis
         with st.spinner("Processing your files. This may take a few moments..."):
+            message_placeholder = st.empty()
             if analyze_idq(uploaded_file):
                 access_token = get_access_token()
                 if access_token:
