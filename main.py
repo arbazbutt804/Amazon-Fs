@@ -64,7 +64,7 @@ def update_excel_with_seller_sku(access_token):
         "SE": "A2NODRKZP88ZB9"
     }
     try:
-        st.info("Starting to update F1s.xlsx with Seller SKU.")
+        message_placeholder.info("Starting to update F1s.xlsx with Seller SKU.")
 
         # Load the Excel file from session state
         input_file = st.session_state.output_file
@@ -130,7 +130,7 @@ def update_excel_with_seller_sku(access_token):
         # Store the updated file in session state
         st.session_state.output_file = output
 
-        st.info("Successfully updated F1s.xlsx with Seller SKU information.")
+        message_placeholder.info("Successfully updated F1s.xlsx with Seller SKU information.")
         return True
 
     except Exception as e:
@@ -139,7 +139,7 @@ def update_excel_with_seller_sku(access_token):
 
 def update_excel_with_sku_description():
     try:
-        st.info("Starting to update F1s.xlsx with SKU description.")
+        message_placeholder.info("Starting to update F1s.xlsx with SKU description.")
         logging.info("Starting to update F1s.xlsx with SKU description.")
 
         # Load the Excel file from session state
@@ -200,7 +200,7 @@ def update_excel_with_sku_description():
         # Store the updated file in session state
         st.session_state.output_file = output
 
-        st.info("Successfully updated F1s.xlsx with SKU description information.")
+        message_placeholder.info("Successfully updated F1s.xlsx with SKU description information.")
 
     except Exception as e:
         st.error(f"An error occurred while updating the Excel file with SKU description: {e}")
@@ -208,7 +208,7 @@ def update_excel_with_sku_description():
 
 def update_excel_with_f1_to_use():
     try:
-        st.info("Starting to update F1s with F1 to Use.")
+        message_placeholder.info("Starting to update F1s with F1 to Use.")
 
         # Load the existing Excel file from session state
         input_file = st.session_state.output_file
@@ -272,7 +272,7 @@ def update_excel_with_f1_to_use():
         output.seek(0)  # Reset the pointer of the BytesIO object
         st.session_state.output_file = output
 
-        st.info(
+        message_placeholder.info(
             "Successfully updated F1s with F1 to Use information.")
     except Exception as e:
         st.error(f"An error occurred while updating the Excel file with F1 to Use: {e}")
@@ -280,7 +280,7 @@ def update_excel_with_f1_to_use():
 
 def update_excel_with_barcodes(uploaded_barcodes):
     try:
-        st.info("Starting to update F1s File with Barcodes.")
+        message_placeholder.info("Starting to update F1s File with Barcodes.")
         logging.info("Starting to update F1s File with Barcodes.")
 
         input_file = st.session_state.output_file
@@ -344,7 +344,7 @@ def update_excel_with_barcodes(uploaded_barcodes):
         output.seek(0)  # Reset the pointer of the BytesIO object
         st.session_state.output_file = output
 
-        st.info(
+        message_placeholder.info(
             "Successfully updated F1s file with Barcodes"
         )
 
@@ -447,7 +447,7 @@ def get_product_listing(access_token, marketplace_id):
         message = f"Exception while submitting feed: {e}"
         return None
 
-def create_asana_tasks_from_excel(send_to_asana=False):
+def create_asana_tasks_from_excel(send_to_asana=True):
     print("create_asana_tasks_from_excel")
     if not send_to_asana:
         st.info("Task creation in Asana is disabled.")
@@ -682,7 +682,7 @@ def main():
         with col3:
             if st.button("Create Asana Tasks"):
                 st.info("Starting Asana task creation...")
-                create_asana_tasks_from_excel(send_to_asana=False)  # Call your function here
+                create_asana_tasks_from_excel(send_to_asana=True)  # Call your function here
                 st.success("Asana tasks created successfully!")
 
 if __name__ == "__main__":
