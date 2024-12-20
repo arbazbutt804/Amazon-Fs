@@ -171,7 +171,7 @@ def update_excel_with_sku_description():
             # Check if 'Seller SKU' exists in df_excel
             if 'Seller SKU' in df_excel.columns:
                 # Create a lookup column without the F1, F2, F3, etc. suffix
-                df_excel['SKU Lookup'] = df_excel['Seller SKU'].str.replace(r'F\d+$', '', regex=True)
+                df_excel['SKU Lookup'] = df_excel['Seller SKU'].str.extract(r'(\d+)')
 
                 # Merge the Excel DataFrame and the CSV DataFrame based on 'SKU Lookup' and 'Sku code'
                 logging.info(f"Merging SKU description for sheet {sheet}.")
