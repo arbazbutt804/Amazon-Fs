@@ -576,7 +576,7 @@ def create_asana_tasks_from_excel(send_to_asana=True):
                     "name": subtask_name
                 }
             }
-            subtask_response = requests.post(subtask_url, json=subtask_payload)
+            subtask_response = requests.post(subtask_url, json=subtask_payload, headers=headers)
             print(f"Added subtask: {subtask_name}. Response: {subtask_response.json()}")
 
 
