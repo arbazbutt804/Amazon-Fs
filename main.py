@@ -553,7 +553,7 @@ def create_asana_tasks_from_excel(send_to_asana=True):
                     })
 
     if new_eans_needed:
-        # Create the main task
+        # Create main task
         main_task_payload = {
             "data": {
                 "name": "NEW F1's Needed",
