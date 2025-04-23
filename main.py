@@ -7,6 +7,7 @@ import pandas as pd
 import requests
 import os
 import streamlit as st
+import datetime
 
 from io import StringIO, BytesIO
 
@@ -554,13 +555,15 @@ def create_asana_tasks_from_excel(send_to_asana=True):
 
     if new_eans_needed:
         # Create main task
+        due_date = (datetime.date.today() + datetime.timedelta(days=5)).isoformat()  # set due date 3 days from today
         main_task_payload = {
             "data": {
                 "name": "NEW F1's Needed",
                 "assignee": "1208716819375873",
                 "html_notes": "<body><b>Please can the following new F1's be created and added to the F1 Log <a href=\"https://docs.google.com/spreadsheets/d/1JesoDfHewylxsso0luFrY6KDclv3kvNjugnvMjRH2ak/edit#gid=0\" target=\"_blank\">here</a></b></body>",
                 "followers": ["greg.stephenson@monstergroupuk.co.uk, 1202218809921567"],
-                "workspace": "17406368418784"
+                "workspace": "17406368418784",
+                "due_on": due_date
             }
         }
         main_task_response = requests.post(url, json=main_task_payload, headers=headers)
