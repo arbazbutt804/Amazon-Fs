@@ -62,7 +62,8 @@ def update_excel_with_seller_sku(access_token):
         "ES": "A1RKKUPIHCS9HS",
         "IT": "APJ6JRA9NG5V4",
         "PL": "A1C3SOZRARQ6R3",
-        "SE": "A2NODRKZP88ZB9"
+        "SE": "A2NODRKZP88ZB9",
+        "IE": "A28R8C7NBKEWEA"
     }
     try:
         message_placeholder.info("Starting to update F1s.xlsx with Seller SKU.")
@@ -602,7 +603,8 @@ country_project_map = {
     'IT': '1205436216136683',
     'ES': '1205436216136678',
     'SE': '1205436216136688',
-    'NL': '1205436216136693'
+    'NL': '1205436216136693',
+    'IE': '1210054430991289'
     # Add other countries here
 }
 country_section_map = {
@@ -613,7 +615,8 @@ country_section_map = {
     'IT': '1205436216136685',
     'ES': '1205436216136680',
     'SE': '1205436216136690',
-    'NL': '1205436216136695'
+    'NL': '1205436216136695',
+    'IE': '1210054430991295'
 }
 
 # Country-to-tag ID mapping
@@ -625,7 +628,8 @@ country_tag_map = {
     'IT': '1205436216136700',
     'ES': '1205436216136701',
     'SE': '1205436216136704',
-    'NL': '1205436216136702'
+    'NL': '1205436216136702',
+    'IE': '1210056122077511'
     # Add other countries and their tag IDs here
 }
 
