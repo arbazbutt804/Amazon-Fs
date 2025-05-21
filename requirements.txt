@@ -3,4 +3,4 @@ python-dotenv==1.0.1
 Requests==2.32.3
 streamlit==1.40.2
 openpyxl
-xlsxwriter
+xlsxwriter==3.0.5
