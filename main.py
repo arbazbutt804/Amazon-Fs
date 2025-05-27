@@ -288,7 +288,7 @@ def update_excel_with_barcodes(uploaded_barcodes):
         input_file = st.session_state.output_file
 
         # Read the uploaded barcodes.csv file into a DataFrame, headers are on the 4th row (index 3)
-        df_barcodes = pd.read_csv(uploaded_barcodes, header=3)
+        df_barcodes = pd.read_csv(uploaded_barcodes)
 
         xls = pd.ExcelFile(input_file)
         sheet_names = xls.sheet_names
