@@ -562,7 +562,7 @@ def create_asana_tasks_from_excel(send_to_asana=True):
                 "name": "NEW F1's Needed",
                 "assignee": "1208716819375873",
                 "html_notes": "<body><b>Please can the following new F1's be created and added to the F1 Log <a href=\"https://docs.google.com/spreadsheets/d/1JesoDfHewylxsso0luFrY6KDclv3kvNjugnvMjRH2ak/edit#gid=0\" target=\"_blank\">here</a></b></body>",
-                "followers": ["greg.stephenson@monstergroupuk.co.uk, 1202218809921567"],
+                "followers": ["1202218809921567"],
                 "workspace": "17406368418784",
                 "due_on": due_date
             }
