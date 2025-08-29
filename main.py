@@ -519,7 +519,8 @@ def create_asana_tasks_from_excel(send_to_asana=True):
                         "projects": projects,
                         "name": task_name,
                         "html_notes": notes_content,
-                        "tags": tags  # Use the looked-up tag ID here
+                        "tags": tags,  # Use the looked-up tag ID here
+                        "followers": []
                     }
                 }
 
@@ -562,7 +563,7 @@ def create_asana_tasks_from_excel(send_to_asana=True):
                 "name": "NEW F1's Needed",
                 "assignee": "1208716819375873",
                 "html_notes": "<body><b>Please can the following new F1's be created and added to the F1 Log <a href=\"https://docs.google.com/spreadsheets/d/1JesoDfHewylxsso0luFrY6KDclv3kvNjugnvMjRH2ak/edit#gid=0\" target=\"_blank\">here</a></b></body>",
-                "followers": "1202218809921567",
+                "followers": ["muhammad.butt@monstergroupuk.co.uk"],
                 "workspace": "17406368418784",
                 "due_on": due_date
             }
@@ -604,7 +605,8 @@ country_project_map = {
     'ES': '1205436216136678',
     'SE': '1205436216136688',
     'NL': '1205436216136693',
-    'IE': '1210054430991289'
+    'IE': '1210054430991289',
+    'PL': '1211173330973246'
     # Add other countries here
 }
 country_section_map = {
@@ -616,7 +618,8 @@ country_section_map = {
     'ES': '1205436216136680',
     'SE': '1205436216136690',
     'NL': '1205436216136695',
-    'IE': '1210054430991295'
+    'IE': '1210054430991295',
+    'PL': '1211173330973249'
 }
 
 # Country-to-tag ID mapping
@@ -629,7 +632,8 @@ country_tag_map = {
     'ES': '1205436216136701',
     'SE': '1205436216136704',
     'NL': '1205436216136702',
-    'IE': '1210056122077511'
+    'IE': '1210056122077511',
+    'PL': '1211182056177396'
     # Add other countries and their tag IDs here
 }
 
