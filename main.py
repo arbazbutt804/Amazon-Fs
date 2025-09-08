@@ -5,7 +5,6 @@ import json
 
 import pandas as pd
 import requests
-import os
 import streamlit as st
 import datetime
 
@@ -366,6 +365,10 @@ def unzip_gzip_to_csv(gzip_data):
         df = pd.read_csv(BytesIO(gzip_data), encoding='windows-1252', delimiter='\t')
     if 'seller-sku' in df.columns and 'asin1' in df.columns:
         parsed_df = df[['seller-sku', 'asin1']]
+    elif 'sku' in df.columns and 'asin' in df.columns:
+        df.rename(columns={'sku': 'seller-sku'}, inplace=True)
+        df.rename(columns={'asin': 'asin1'}, inplace=True)
+        parsed_df = df[['seller-sku', 'asin1']]
     elif 'seller-sku' in df.columns and 'product-id' in df.columns:
         df.rename(columns={'product-id': 'asin1'}, inplace=True)
         parsed_df = df[['seller-sku', 'asin1']]
@@ -413,9 +416,14 @@ def get_product_listing(access_token, marketplace_id):
         'x-amz-access-token': access_token,
     }
 
+    # Determine report type based on marketplace (add this for the france listing issue)
+    if marketplace_id == "A13V1IB3VIYZZH":
+        report_type = "GET_FLAT_FILE_OPEN_LISTINGS_DATA"
+    else:
+        report_type = "GET_MERCHANT_LISTINGS_ALL_DATA"
     # body of the request
     body = {
-        "reportType": "GET_MERCHANT_LISTINGS_DATA",
+        "reportType": report_type,
         "marketplaceIds": [marketplace_id]
     }
     try:
