@@ -39,6 +39,8 @@ def analyze_idq(uploaded_file):
         df = pd.read_excel(uploaded_file)
         # Filter for products with review scores above 0.1 but below 3.5
         filtered_df = df[(df['Review Avg Rating'] > 0.1) & (df['Review Avg Rating'] < 3.5)]
+        total_rows = len(filtered_df)
+        print(f"Total rows: {total_rows}")
         grouped = filtered_df.groupby('Marketplace')
         F1_output = BytesIO()
         with pd.ExcelWriter(F1_output, engine='xlsxwriter') as writer:
@@ -569,7 +571,8 @@ def create_asana_tasks_from_excel(send_to_asana=True):
         main_task_payload = {
             "data": {
                 "name": "NEW F1's Needed",
-                "assignee": "1210962312269076",
+                "assignee": "1212339893488393",
+                "projects": ["1205440074591271"],
                 "html_notes": "<body><b>Please can the following new F1's be created and added to the F1 Log <a href=\"https://docs.google.com/spreadsheets/d/1JesoDfHewylxsso0luFrY6KDclv3kvNjugnvMjRH2ak/edit#gid=0\" target=\"_blank\">here</a></b></body>",
                 "followers": ["muhammad.butt@monstergroupuk.co.uk"],
                 "workspace": "17406368418784",
@@ -595,7 +598,7 @@ def create_asana_tasks_from_excel(send_to_asana=True):
 
 def fetch_existing_asana_tasks(project_id, headers):
     print("fetch_existing_asana_tasks")
-    url = f"https://app.asana.com/api/1.0/tasks?project={project_id}&opt_fields=name"
+    url = f"https://app.asana.com/api/1.0/tasks?project={project_id}&opt_fields=name&completed_since=now"
     response = requests.get(url, headers=headers)
     if response.status_code == 200:
         return [task['name'] for task in json.loads(response.text)['data']]
