@@ -174,7 +174,7 @@ def update_excel_with_sku_description():
             # Check if 'Seller SKU' exists in df_excel
             if 'Seller SKU' in df_excel.columns:
                 # Create a lookup column without the F1, F2, F3, etc. suffix
-                df_excel['SKU Lookup'] = df_excel['Seller SKU'].str.extract(r'(\d+)')
+                df_excel['SKU Lookup'] = df_excel['Seller SKU'].str.extract(r'^(\d+(?:\(\d+\))?)')
 
                 # Merge the Excel DataFrame and the CSV DataFrame based on 'SKU Lookup' and 'Sku code'
                 logging.info(f"Merging SKU description for sheet {sheet}.")
@@ -244,8 +244,8 @@ def update_excel_with_f1_to_use():
                 for sku in df_excel['Seller SKU']:
                     # Search for the SKU in columns B to P of the CSV DataFrame
                     found_row = df_csv.iloc[:, 1:16][
-                        df_csv.iloc[:, 1:16].apply(lambda row: row.astype(str).str.contains(str(sku), na=False).any(),
-                                                   axis=1)]  # Search for SKU in columns B to P
+                        df_csv.iloc[:, 1:16].apply(lambda row: row.astype(str).str.contains(str(sku), na=False, regex=False).any(),
+                            axis=1)]
 
                     if not found_row.empty:
                         # Take the last non-empty value from the row
