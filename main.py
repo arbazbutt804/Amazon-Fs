@@ -33,15 +33,27 @@ st.set_page_config(page_title="IDQ File Processor", page_icon="📄")
 # Initialize session state for keeping track of file paths
 if "output_file" not in st.session_state:
     st.session_state.output_file = None
+if "variation_tasks" not in st.session_state:
+    st.session_state.variation_tasks = []
 
 def analyze_idq(uploaded_file):
     try:
         df = pd.read_excel(uploaded_file)
         # Filter for products with review scores above 0.1 but below 3.5
-        filtered_df = df[(df['Review Avg Rating'] > 0.1) & (df['Review Avg Rating'] < 3.5)]
+        filtered_df = df[(df['Review Avg Rating'] >= 1) & (df['Review Avg Rating'] <= 3.5)]
+
+        # --- SPLIT INTO TWO GROUPS ---
+
+        # Group 1: Has a Parent ASIN → needs variation check (not F1)
+        has_parent = filtered_df[filtered_df['Parent ASIN'].notna() & (filtered_df['Parent ASIN'].str.strip() != '')]
+
+        # Group 2: No Parent ASIN → needs F1 request (existing flow)
+        no_parent = filtered_df[filtered_df['Parent ASIN'].isna() | (filtered_df['Parent ASIN'].str.strip() == '')]
+
+        # --- EXISTING F1 FLOW (no parent only) ---
         total_rows = len(filtered_df)
         print(f"Total rows: {total_rows}")
-        grouped = filtered_df.groupby('Marketplace')
+        grouped = no_parent.groupby('Marketplace')
         F1_output = BytesIO()
         with pd.ExcelWriter(F1_output, engine='xlsxwriter') as writer:
             for name, group in grouped:
@@ -49,7 +61,27 @@ def analyze_idq(uploaded_file):
         F1_output.seek(0)
         # Save the file in Streamlit session state so it can be used later
         st.session_state.output_file = F1_output
-        return True
+
+        # --- NEW: VARIATION CHECK TASKS ---
+        # Group by Parent ASIN + Marketplace so we send ONE task per parent group, not per child ASIN
+        variation_groups = has_parent.groupby(['Parent ASIN', 'Marketplace'])
+
+        variation_tasks = []
+        for (parent_asin, marketplace), group in variation_groups:
+            child_asins = group['ASIN'].tolist()
+            variation_tasks.append({
+                'Parent ASIN': parent_asin,
+                'Marketplace': marketplace,
+                'Child ASINs': ', '.join(child_asins),
+                'Avg Rating': group['Review Avg Rating'].iloc[0]
+            })
+
+        # Save variation tasks to a separate sheet / file so you can review or send to Asana
+        if variation_tasks:
+            st.session_state.variation_tasks = variation_tasks  # store in session state
+            logging.info(f"{len(variation_tasks)} variation groups flagged for review.")
+
+        return True, variation_tasks  # return tasks so caller can use them
     except Exception as e:
         st.error(f"An unexpected error occurred during the initial IDQ analysis: {e}")
 
@@ -359,7 +391,7 @@ def unzip_gzip_to_csv(gzip_data):
     try:
         with gzip.GzipFile(fileobj=BytesIO(gzip_data), mode='rb') as f:
             # Read the decompressed content into a DataFrame (assuming the data is CSV format)
-            df = pd.read_csv(f, encoding='windows-1252', delimiter='\t')
+            df = pd.read_csv(f, encoding='utf-8-sig', delimiter='\t')
             # Parse the DataFrame to keep only the 'seller-sku' and 'asin1' columns
     except (OSError, gzip.BadGzipFile) as e:
         logging.info("Not a GZIP file. Trying as plain CSV...")
@@ -605,6 +637,90 @@ def fetch_existing_asana_tasks(project_id, headers):
     else:
         return []
 
+def create_variation_check_tasks():
+    try:
+        headers = {
+            "accept": "application/json",
+            "content-type": "application/json",
+            "authorization": f"Bearer {ASANA_TOKEN}"
+        }
+
+        if not st.session_state.variation_tasks:
+            st.info("No variation check tasks to create.")
+            return
+
+        variation_df = pd.DataFrame(st.session_state.variation_tasks)
+
+        created = 0
+        skipped = 0
+
+        # Cache existing tasks per project to avoid duplicate API calls
+        existing_tasks_cache = {}
+
+        for _, row in variation_df.iterrows():
+            parent_asin = row['Parent ASIN']
+            marketplace = row['Marketplace']
+            child_asins = row['Child ASINs']
+            avg_rating = row['Avg Rating']
+
+            # Look up project and section for this country
+            project_id = country_project_map.get(marketplace)
+            section_id = country_check_variation_section_map.get(marketplace)
+
+            if not project_id or not section_id:
+                logging.warning(f"No project/section mapping for {marketplace}, skipping.")
+                st.warning(f"No Asana mapping found for marketplace: {marketplace}")
+                continue
+
+            # Fetch existing tasks for this project (only once per project)
+            if project_id not in existing_tasks_cache:
+                existing_response = requests.get( f"https://app.asana.com/api/1.0/tasks?project={project_id}&opt_fields=name", headers=headers)
+                existing_tasks_cache[project_id] = [t['name'] for t in existing_response.json().get('data', [])]
+
+            task_name = f"Check Variation - {parent_asin} ({marketplace})"
+
+            if task_name in existing_tasks_cache[project_id]:
+                logging.warning(f"Variation task already exists for {parent_asin}, skipping.")
+                skipped += 1
+                continue
+
+            # Build task notes
+            notes = (
+                f"<body>"
+                f"<b>Parent ASIN:</b> {parent_asin}\n"
+                f"<b>Marketplace:</b> {marketplace}\n"
+                f"<b>Avg Rating:</b> {round(avg_rating, 2)}\n"
+                f"<b>Child ASINs:</b> {child_asins}\n"
+                f"\n"
+                f"<b>Please review the variation group and decide if an F1 is needed for any child ASINs.</b>"
+                f"</body>"
+            )
+
+            # Step 1: Create the task in the correct country project
+            create_response = requests.post("https://app.asana.com/api/1.0/tasks",json={"data": {"name": task_name, "projects": [project_id], "html_notes": notes}},
+                headers=headers)
+            task_data = create_response.json()
+
+            if 'data' not in task_data or 'gid' not in task_data['data']:
+                logging.error(f"Failed to create task for {parent_asin}: {task_data}")
+                st.error(f"Failed to create task for {parent_asin} ({marketplace})")
+                continue
+
+            task_gid = task_data['data']['gid']
+
+            # Step 2: Move to "Check Variation" section — triggers automation
+            requests.post(f"https://app.asana.com/api/1.0/sections/{section_id}/addTask",json={"data": {"task": task_gid}}, headers=headers)
+
+            created += 1
+            logging.info(f"Created variation check task for {parent_asin} in {marketplace}.")
+
+        st.success(f"{created} variation check task(s) created. {skipped} skipped (already existed).")
+
+    except Exception as e:
+        logging.error(f"Error creating variation check tasks: {e}")
+        st.error(f"Error creating variation check tasks: {e}")
+
+
 
 # Country-to-project ID mapping
 country_project_map = {
@@ -619,6 +735,17 @@ country_project_map = {
     'IE': '1210054430991289',
     'PL': '1211173330973246'
     # Add other countries here
+}
+country_check_variation_section_map = {
+    'UK': '1214737551863277',
+    'FR': '1214737623732249',
+    'BE': '1214737623732249',  # same project as FR
+    'DE': '1214737551863269',
+    'IT': '1214737551863270',
+    'ES': '1214737623732250',
+    'SE': '1214737551863276',
+    'NL': '1214737551863273',
+    'IE': '1214737623732247'
 }
 country_section_map = {
     'UK': '1205420991974320',
@@ -684,7 +811,8 @@ def main():
     if uploaded_file is not None and uploaded_barcodes is not None and st.session_state.output_file is None:
         # When a file is uploaded, run the analysis
         with st.spinner("Processing your files. This may take a few moments..."):
-            if analyze_idq(uploaded_file):
+            success, variation_tasks = analyze_idq(uploaded_file)
+            if success:
                 access_token = get_access_token()
                 if access_token:
                     if update_excel_with_seller_sku(access_token):
@@ -706,6 +834,16 @@ def main():
                 st.info("Starting Asana task creation...")
                 create_asana_tasks_from_excel(send_to_asana=True)  # Call your function here
                 st.success("Asana tasks created successfully!")
+    # Variation tasks — separate row, only shows if variation tasks exist
+    if st.session_state.variation_tasks:
+        st.divider()
+        st.info(f"{len(st.session_state.variation_tasks)} variation group(s) found that need review instead of F1.")
+
+        col1, col2 = st.columns([0.1, 1])
+        with col2:
+            if st.button("Create Variation Check Tasks in Asana"):
+                st.info("Creating variation check tasks in Asana...")
+                create_variation_check_tasks()
 
 if __name__ == "__main__":
     main()
