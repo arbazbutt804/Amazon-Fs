@@ -711,6 +711,9 @@ def create_variation_check_tasks():
             # Step 2: Move to "Check Variation" section — triggers automation
             requests.post(f"https://app.asana.com/api/1.0/sections/{section_id}/addTask",json={"data": {"task": task_gid}}, headers=headers)
 
+            # Step 3: Remove Asana token owner as collaborator
+            requests.post(f"https://app.asana.com/api/1.0/tasks/{task_gid}/removeFollowers",json={"data": {"followers": ["1202649579387032"]}},headers=headers)
+
             created += 1
             logging.info(f"Created variation check task for {parent_asin} in {marketplace}.")
 
